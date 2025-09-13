@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Wellness Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #f8fafc;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 p-4 sm:p-8 flex items-center justify-center min-h-screen">
+    <div class="container w-full flex flex-col items-center">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Student Wellness</h1>
+            <p class="text-gray-500">Your daily check-in for a healthier mind.</p>
+        </header>
+
+        <!-- Main Check-in Section -->
+        <div id="checkin-section" class="w-full text-center transition-opacity duration-500">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">How are you feeling today?</h2>
+            <textarea id="mood-text" class="w-full h-32 p-4 mb-4 text-gray-700 placeholder-gray-400 bg-white border border-gray-300 rounded-xl resize-none transition-colors" placeholder="Write about your day..."></textarea>
+            <button id="submit-checkin" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer">
+                Submit Check-in
+            </button>
+        </div>
+
+        <!-- Feedback and Recommendation Section (hidden by default) -->
+        <div id="feedback-section" class="w-full hidden flex flex-col items-center transition-opacity duration-500 opacity-0">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Today's Summary</h2>
+            <div class="w-full p-6 bg-white rounded-xl border border-gray-200 text-left">
+                <p class="text-lg font-medium text-gray-700 mb-2">Sentiment Analysis:</p>
+                <p id="sentiment-result" class="text-xl font-bold text-indigo-600 mb-4"></p>
+                <p class="text-lg font-medium text-gray-700 mb-2">Wellness Recommendation:</p>
+                <p id="recommendation-result" class="text-gray-600"></p>
+            </div>
+            <button id="view-trends" class="mt-6 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors cursor-pointer">
+                View Trends
+            </button>
+        </div>
+
+        <!-- Trends and Analytics Section (hidden by default) -->
+        <div id="trends-section" class="w-full hidden flex flex-col items-center transition-opacity duration-500 opacity-0">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Your Wellness Trends</h2>
+            <div class="w-full p-6 bg-white rounded-xl border border-gray-200 text-left">
+                <p class="text-lg font-medium text-gray-700 mb-2">Last 7 Check-ins:</p>
+                <ul id="trend-list" class="space-y-2 text-gray-600"></ul>
+            </div>
+            <button id="back-to-checkin" class="mt-6 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors cursor-pointer">
+                Back to Check-in
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const moodTextarea = document.getElementById('mood-text');
+            const submitBtn = document.getElementById('submit-checkin');
+            const viewTrendsBtn = document.getElementById('view-trends');
+            const backBtn = document.getElementById('back-to-checkin');
+
+            const checkinSection = document.getElementById('checkin-section');
+            const feedbackSection = document.getElementById('feedback-section');
+            const trendsSection = document.getElementById('trends-section');
+            const sentimentResult = document.getElementById('sentiment-result');
+            const recommendationResult = document.getElementById('recommendation-result');
+            const trendList = document.getElementById('trend-list');
+
+            // Constants for localStorage keys
+            const STORAGE_KEY = 'studentWellnessData';
+
+            // --- Utility Functions ---
+
+            // Get today's date in YYYY-MM-DD format
+            const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+            // Load data from localStorage
+            const loadData = () => {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : {};
+            };
+
+            // Save data to localStorage
+            const saveData = (data) => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            };
+
+            // --- Simulated AI Logic ---
+
+            // Simple sentiment analysis based on keywords
+            const analyzeSentiment = (text) => {
+                const lowerText = text.toLowerCase();
+                if (lowerText.includes('happy') || lowerText.includes('great') || lowerText.includes('good') || lowerText.includes('joy')) {
+                    return { score: 1, label: 'Positive' };
+                }
+                if (lowerText.includes('sad') || lowerText.includes('tired') || lowerText.includes('stressed') || lowerText.includes('anxious') || lowerText.includes('bad')) {
+                    return { score: -1, label: 'Negative' };
+                }
+                return { score: 0, label: 'Neutral' };
+            };
+
+            // Provides a recommendation based on sentiment score
+            const getRecommendation = (score) => {
+                if (score > 0) {
+                    return 'Great! Keep up the positive energy. Maybe share a positive moment with a friend today.';
+                } else if (score < 0) {
+                    return 'It sounds like you are going through a tough time. Remember to take a break, listen to some calming music, or talk to someone you trust.';
+                } else {
+                    return 'Your mood seems stable. Try to maintain balance throughout your day with a short walk or a fun activity.';
+                }
+            };
+
+            // --- App Flow Functions ---
+
+            // Submits the check-in and updates state
+            submitBtn.addEventListener('click', () => {
+                const moodText = moodTextarea.value.trim();
+                if (moodText === '') {
+                    // In a real app, use a custom modal instead of alert
+                    console.log('Please write something about your day.');
+                    return;
+                }
+
+                const sentiment = analyzeSentiment(moodText);
+                const recommendation = getRecommendation(sentiment.score);
+                const today = getTodayDate();
+
+                // Load existing data, add today's entry, and save
+                const wellnessData = loadData();
+                wellnessData[today] = {
+                    text: moodText,
+                    sentiment: sentiment.label,
+                    score: sentiment.score
+                };
+                saveData(wellnessData);
+
+                // Update UI for feedback
+                sentimentResult.textContent = sentiment.label;
+                recommendationResult.textContent = recommendation;
+                
+                showSection('feedback');
+            });
+
+            // Displays the trends section
+            viewTrendsBtn.addEventListener('click', () => {
+                const wellnessData = loadData();
+                const dates = Object.keys(wellnessData).sort().reverse();
+                trendList.innerHTML = '';
+
+                if (dates.length === 0) {
+                    trendList.innerHTML = '<li class="text-gray-500">No data to display. Check in to start tracking your mood.</li>';
+                } else {
+                    // Display up to the last 7 entries
+                    const recentDates = dates.slice(0, 7);
+                    recentDates.forEach(date => {
+                        const entry = wellnessData[date];
+                        const listItem = document.createElement('li');
+                        const moodClass = entry.score > 0 ? 'text-green-600' : (entry.score < 0 ? 'text-red-600' : 'text-yellow-600');
+                        listItem.className = 'p-3 bg-white border border-gray-200 rounded-lg flex justify-between items-center';
+                        listItem.innerHTML = `
+                            <span><strong>${date}:</strong> ${entry.text}</span>
+                            <span class="font-bold ${moodClass}">${entry.sentiment}</span>
+                        `;
+                        trendList.appendChild(listItem);
+                    });
+                }
+                showSection('trends');
+            });
+
+            // Returns to the main check-in section
+            backBtn.addEventListener('click', () => {
+                moodTextarea.value = '';
+                showSection('checkin');
+            });
+
+            // Manages section visibility with transitions
+            function showSection(sectionName) {
+                const allSections = {
+                    'checkin': checkinSection,
+                    'feedback': feedbackSection,
+                    'trends': trendsSection
+                };
+                
+                // Hide all sections first
+                Object.values(allSections).forEach(section => {
+                    section.classList.add('opacity-0');
+                    setTimeout(() => section.classList.add('hidden'), 500);
+                });
+
+                // Show the requested section
+                setTimeout(() => {
+                    const targetSection = allSections[sectionName];
+                    targetSection.classList.remove('hidden');
+                    setTimeout(() => targetSection.classList.remove('opacity-0'), 100);
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
